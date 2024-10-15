@@ -1,13 +1,12 @@
 version: '3'
 
 services:
-  postgres-db:
-    image: postgres:latest
-    container_name: postgres-db
+  mysql:
+    image: mysql:latest
+    container_name: mysql-db
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: 1234
+      MYSQL_ROOT_PASSWORD: 1234
       TZ: Asia/Seoul
     ports:
-      - '5432:5432'
+      - '3307:3306'
     restart: always

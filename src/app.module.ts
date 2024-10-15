@@ -8,6 +8,7 @@ import { join } from 'path';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ScheduleModule } from '@nestjs/schedule';
 import { WinstonModule } from 'nest-winston';
+import { envVariableKeys } from './common/config/env';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { WinstonModule } from 'nest-winston';
       isGlobal: true,
       envFilePath: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
       validationSchema: Joi.object({
-        DB_TYPE: Joi.string().valid('postgres').required(),
+        DB_TYPE: Joi.string().valid('mysql').required(),
         DB_HOST: Joi.string().required(),
         DB_PORT: Joi.number().required(),
         DB_USERNAME: Joi.string().required(),
@@ -26,9 +27,25 @@ import { WinstonModule } from 'nest-winston';
         REFRESH_TOKEN_SECRET: Joi.string().required(),
       }),
     }),
-    // TypeOrmModule.forRootAsync({
-    //   useFactory: (configService: ConfigService) => ({}),
-    // }),
+    TypeOrmModule.forRootAsync({
+      useFactory: (configService: ConfigService) => ({
+        type: configService.get<string>(envVariableKeys.dbType) as 'mysql',
+        host: configService.get<string>(envVariableKeys.dbHost),
+        port: configService.get<number>(envVariableKeys.dbPort),
+        username: configService.get<string>(envVariableKeys.dbUsername),
+        password: configService.get<string>(envVariableKeys.dbPassword),
+        database: configService.get<string>(envVariableKeys.dbDatabase),
+        entities: [],
+        synchronize:
+          configService.get<string>(process.env.NODE_ENV) === 'production' ? false : true,
+        ...(configService.get<string>(process.env.NODE_ENV) === 'production' && {
+          ssl: {
+            rejectUnauthorized: false,
+          },
+        }),
+      }),
+      inject: [ConfigService],
+    }),
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'public'),
       serveRoot: '/public/',
