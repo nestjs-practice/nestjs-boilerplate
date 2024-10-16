@@ -12,7 +12,7 @@ import { Reflector } from '@nestjs/core';
 import { Throttle } from '@/common/decorator/throttle.decorator';
 
 @Injectable()
-export class TrottleInterceptor implements NestInterceptor {
+export class ThrottleInterceptor implements NestInterceptor {
   constructor(
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,

@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -8,7 +8,15 @@ import { join } from 'path';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ScheduleModule } from '@nestjs/schedule';
 import { WinstonModule } from 'nest-winston';
-import { envVariableKeys } from './common/config/env';
+import { envVariableKeys } from '@/common/config/env';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { AuthGuard } from '@/auth/guard/auth.guard';
+import { ForbiddenExceptionFilter } from '@/common/filter/forbidden.filter';
+import { ResponseTimeInterceptor } from '@/common/interceptor/response-time.interceptor';
+import { QueryFailedExceptionFilter } from '@/common/filter/query-fail.filter';
+import { ThrottleInterceptor } from '@/common/interceptor/throttle.interceptor';
+import { BearerTokenMiddleware } from '@/auth/middleware/bearer-token.middleware';
+import { AuthModule } from '@/auth/auth.module';
 
 @Module({
   imports: [
@@ -83,14 +91,45 @@ import { envVariableKeys } from './common/config/env';
         }),
       ],
     }),
-    // todo : domain module 추가
+    AuthModule,
   ],
-  controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ResponseTimeInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ThrottleInterceptor,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: ForbiddenExceptionFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: QueryFailedExceptionFilter,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // todo : 추가 작업 필요
-    consumer.apply();
+    consumer
+      .apply(BearerTokenMiddleware)
+      .exclude(
+        {
+          path: 'auth/sign-in', // todo : 로그인에 맞는 path 따로 설정
+          method: RequestMethod.POST,
+        },
+        {
+          path: 'auth/sign-up', // todo : 회원가입에 맞는 path 따로 설정
+          method: RequestMethod.POST,
+        },
+      )
+      .forRoutes('*');
   }
 }
