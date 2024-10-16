@@ -12,6 +12,7 @@ import { envVariableKeys } from './common/config/env';
 
 @Module({
   imports: [
+    // * 환경변수 validate
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.production',
@@ -46,6 +47,7 @@ import { envVariableKeys } from './common/config/env';
       }),
       inject: [ConfigService],
     }),
+    // * 정적파일 접근 path 설정
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'public'),
       serveRoot: '/public/',
