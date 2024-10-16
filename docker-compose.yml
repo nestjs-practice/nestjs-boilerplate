@@ -10,3 +10,14 @@ services:
     ports:
       - '3307:3306'
     restart: always
+  app:
+    build: 
+      context: .
+      dockerfile: dockerfile
+      target: run
+    image: nestjs-boilerplate:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV: production
+    restart: unless-stopped
